@@ -595,6 +595,15 @@ func LibpodToContainerJSON(l *libpod.Container, sz bool) (*handlers.LegacyImageI
 	hc.Runtime = inspect.OCIRuntime
 	sort.Strings(hc.Binds)
 
+	// Docker fills HostConfig.MaskedPaths and HostConfig.ReadonlyPaths with the
+	// paths the container actually runs with, so tools that read them expect
+	// the keys to carry the effective lists. Libpod's inspect has no such
+	// fields; take them from the generated OCI spec.
+	if ctrSpec := l.Spec(); ctrSpec != nil && ctrSpec.Linux != nil {
+		hc.MaskedPaths = ctrSpec.Linux.MaskedPaths
+		hc.ReadonlyPaths = ctrSpec.Linux.ReadonlyPaths
+	}
+
 	// Map CgroupMode to CgroupnsMode for Docker API compatibility
 	switch inspect.HostConfig.CgroupMode {
 	case "private":
